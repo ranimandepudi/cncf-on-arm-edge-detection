@@ -1,0 +1,4 @@
+
+# Edge local secrets / logs
+edge/variables.sh
+*.log

@@ -1,0 +1,4 @@
+{
+  "allowed_registries": ["docker.io", "harbor.arm.example.com"],
+  "allowed_cloud_targets": ["http://34.228.231.124:8080"]
+}

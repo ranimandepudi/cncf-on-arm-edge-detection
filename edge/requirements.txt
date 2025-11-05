@@ -1,0 +1,5 @@
+numpy
+opencv-python
+imutils
+requests
+huggingface_hub

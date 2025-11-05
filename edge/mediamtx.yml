@@ -1,0 +1,14 @@
+# mediamtx.yml — MediaMTX v1.15.2 compatible
+# Enables RTSP server and allows publishing from any client
+
+# Global server settings
+logLevel: info
+
+# RTSP server options (no nested block anymore)
+rtspAddress: :8554
+
+# Path configuration
+paths:
+  all:
+    source: publisher
+
