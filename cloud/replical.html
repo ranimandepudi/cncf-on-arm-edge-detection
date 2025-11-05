@@ -1,0 +1,354 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Edge Detection System</title>
+<style>
+  :root{--bg:#0b1220;--panel:#0f172a;--muted:#94a3b8;--text:#e6edf7;--border:#1f2a44;--accent:#5b9cff;--danger:#ff3b3b;--good:#22c55e;--chip:#1e293b;--card:#111a2b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji")}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.03),transparent)}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:36px;height:36px;border-radius:12px;background:radial-gradient(60% 70% at 30% 30%,var(--accent),transparent),linear-gradient(135deg,#4f46e5,#06b6d4);box-shadow:0 8px 30px rgba(91,156,255,.3)}
+  h1{font-size:18px;margin:0}.sub{font-size:12px;color:var(--muted)}
+  .status{display:flex;align-items:center;gap:8px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .dot.ok{background:var(--good)}.dot.bad{background:var(--danger)}
+  .armchip{margin-left:12px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#0f172a;font-size:12px;letter-spacing:.4px}
+  main{max-width:1100px;margin:18px auto;padding:0 16px;display:grid;gap:16px;grid-template-columns:1fr}
+  @media (min-width:960px){main{grid-template-columns:360px 1fr}}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px}
+  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .chip{background:var(--chip);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:6px 10px;font-size:12px}
+  /* banner */
+  .banner{position:relative;border-radius:14px;border:1px solid var(--border);background:var(--card);padding:14px;margin-bottom:12px}
+  .banner.hot{border-color:rgba(255,59,59,.5);box-shadow:0 10px 28px rgba(255,59,59,.12)}
+  .badge{padding:4px 8px;border-radius:999px;border:1px solid var(--border);font-size:11px;background:#1f2937}
+  .badge.red{background:rgba(255,59,59,.12);border-color:rgba(255,59,59,.4);color:#ffb6b6}
+  .big{font-size:28px;font-weight:800;letter-spacing:.3px}
+  .muted{color:var(--muted)}
+  .kvs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .kv{background:#0f172a;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12px}
+  .kv b{font-weight:600}
+  /* metrics */
+  .metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px}
+  .metric{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}
+  .metric .n{font-size:22px;font-weight:800}.metric .l{font-size:12px;color:var(--muted)}
+  /* table */
+  table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left}
+  th{font-size:12px;color:var(--muted);font-weight:600}tr:hover{background:rgba(255,255,255,.02)}
+  /* --- Architecture flow --- */
+  .arch{grid-column:1/-1}
+  .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+  .node{
+    min-width:160px;padding:12px;border-radius:12px;text-align:center;
+    background:var(--card);border:1px solid var(--border);position:relative
+  }
+  .node .title{font-weight:800}
+  .node .sub{font-size:11px;color:var(--muted);margin-top:4px;min-height:14px}
+  .node.ok{border-color:rgba(34,197,94,.5);box-shadow:0 6px 20px rgba(34,197,94,.08)}
+  .node.active{border-color:rgba(255,59,59,.5);box-shadow:0 8px 24px rgba(255,59,59,.15);animation:pulse 1.8s infinite}
+  .node.idle{border-color:rgba(91,156,255,.5);box-shadow:0 6px 20px rgba(91,156,255,.08)}
+  .node.offline{border-color:rgba(255,59,59,.5);opacity:.65}
+  .node.unknown{opacity:.75}
+  .archchip{position:absolute;right:8px;top:8px;font-size:10px;padding:3px 6px;border-radius:999px;border:1px solid var(--border);background:#0f172a;opacity:.9;letter-spacing:.3px}
+  .statuspill{display:inline-block;margin-top:6px;padding:4px 8px;border-radius:999px;border:1px solid var(--border);font-size:11px}
+  .status-ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.4)}
+  .status-bad{background:rgba(255,59,59,.12);border-color:rgba(255,59,59,.4);color:#ffb6b6}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,59,59,.30)}70%{box-shadow:0 0 0 14px rgba(255,59,59,0)}100%{box-shadow:0 0 0 0 rgba(255,59,59,0)}}
+  .arrow{opacity:.5;font-weight:800}
+  .legend{display:flex;gap:8px;flex-wrap:wrap}
+  .leg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .dot2{width:10px;height:10px;border-radius:50%;background:#334155}
+  .leg .act{background:var(--danger)} .leg .ok{background:var(--good)} .leg .idl{background:var(--accent)} .leg .off{background:var(--danger);opacity:.7}
+</style>
+
+<header>
+  <div class="brand">
+    <div class="logo"></div>
+    <div>
+      <h1>Edge Detection System</h1>
+      <div class="sub">Human detection — text-only events from edge</div>
+    </div>
+  </div>
+  <div class="status">
+    <span class="dot bad" id="netDot"></span><span id="netLbl">OFFLINE</span>
+    <span class="armchip">ARM64 · end-to-end</span>
+  </div>
+</header>
+
+<main>
+  <!-- Left: Banner + Metrics -->
+  <section class="panel">
+    <div class="row" style="justify-content:space-between">
+      <span class="chip" id="eventCount">0 events</span>
+    </div>
+
+    <div id="banner" class="banner">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div>
+          <div class="big" id="bannerTitle">Waiting for events…</div>
+          <div class="muted" id="bannerTime">—</div>
+        </div>
+        <div class="badge" id="bannerBadge">IDLE</div>
+      </div>
+      <div class="kvs" id="bannerKVs" style="display:none">
+        <div class="kv">count: <b id="kvCount">—</b></div>
+        <div class="kv">confidence: <b id="kvConf">—</b></div>
+        <div class="kv">model: <b id="kvModel">—</b></div>
+        <div class="kv">image: <b id="kvImage">—</b></div>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="n" id="m10s">0</div><div class="l">detections · last 10s</div></div>
+      <div class="metric"><div class="n" id="m1m">0</div><div class="l">detections · last 1m</div></div>
+      <div class="metric"><div class="n" id="m5m">0</div><div class="l">detections · last 5m</div></div>
+    </div>
+  </section>
+
+  <!-- Right: Timeline -->
+  <section class="panel">
+    <div class="row" style="justify-content:space-between;margin-bottom:6px">
+      <div class="row" style="gap:10px">
+        <span style="font-weight:700;letter-spacing:.2px">Timeline</span>
+        <span class="muted">newest first</span>
+      </div>
+      <span class="chip" id="lastTs">last: —</span>
+    </div>
+    <div style="overflow:auto">
+      <table id="table">
+        <thead>
+          <tr>
+            <th style="min-width:120px">Time</th>
+            <th>Event</th>
+            <th>Person count</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Architecture flow -->
+  <section class="panel arch">
+    <div class="row" style="justify-content:space-between">
+      <div class="row" style="gap:10px">
+        <span style="font-weight:700;letter-spacing:.2px">Architecture</span>
+        <span class="muted">live pipeline highlights</span>
+      </div>
+      <div class="legend">
+        <div class="leg"><span class="dot2 act"></span> active</div>
+        <div class="leg"><span class="dot2 ok"></span> ok</div>
+        <div class="leg"><span class="dot2 idl"></span> inactive</div>
+        <div class="leg"><span class="dot2 off"></span> failed/offline</div>
+      </div>
+    </div>
+    <div class="flow">
+      <div class="arrow">→</div>
+      <div class="node unknown" id="n-edge">
+        <div class="archchip">arm64</div>
+        <div class="title">Edge Camera</div>
+        <div class="sub" id="s-edge">camera · arm64</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node unknown" id="n-harbor">
+        <div class="archchip">arm64</div>
+        <div class="title">Harbor Registry</div>
+        <div class="sub" id="s-harbor"></div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node unknown" id="n-opa">
+        <div class="archchip">arm64</div>
+        <div class="title">OPA Policy</div>
+        <div class="sub" id="s-opa">unknown</div>
+        <div id="p-opa" class="statuspill" style="display:none"></div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node unknown" id="n-runtime">
+        <div class="archchip">arm64</div>
+        <div class="title">Container Runtime</div>
+        <div class="sub" id="s-runtime"></div>
+        <div id="p-runtime" class="statuspill" style="display:none"></div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node offline" id="n-cloud">
+        <div class="archchip">arm64</div>
+        <div class="title">Cloud API</div>
+        <div class="sub" id="s-cloud">offline</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node ok" id="n-ui">
+        <div class="archchip">arm64</div>
+        <div class="title">UI</div>
+        <div class="sub" id="s-ui">ready</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  const API = location.origin;
+  const qs = new URLSearchParams(location.search);
+  const DEVICE_ID = qs.get('device_id') || 'mac-m4-01';
+
+  const tbody = document.getElementById('tbody');
+  const netDot = document.getElementById('netDot');
+  const netLbl = document.getElementById('netLbl');
+  const eventCountEl = document.getElementById('eventCount');
+  const lastTsEl = document.getElementById('lastTs');
+
+  const banner = document.getElementById('banner');
+  const bannerTitle = document.getElementById('bannerTitle');
+  const bannerTime = document.getElementById('bannerTime');
+  const bannerBadge = document.getElementById('bannerBadge');
+  const bannerKVs = document.getElementById('bannerKVs');
+  const kvCount  = document.getElementById('kvCount');
+  const kvConf   = document.getElementById('kvConf');
+  const kvModel  = document.getElementById('kvModel');
+  const kvImage  = document.getElementById('kvImage');
+
+  const m10s = document.getElementById('m10s');
+  const m1m  = document.getElementById('m1m');
+  const m5m  = document.getElementById('m5m');
+
+  // Architecture nodes
+  const nEdge = document.getElementById('n-edge');
+  const nHarbor = document.getElementById('n-harbor');
+  const nOPA = document.getElementById('n-opa');
+  const nRun = document.getElementById('n-runtime');
+  const nCloud = document.getElementById('n-cloud');
+  const nUI = document.getElementById('n-ui');
+  const sEdge = document.getElementById('s-edge');
+  const sHarbor = document.getElementById('s-harbor');
+  const sOPA = document.getElementById('s-opa');
+  const sRun = document.getElementById('s-runtime');
+  const sCloud = document.getElementById('s-cloud');
+  const sUI = document.getElementById('s-ui');
+  const pOPA = document.getElementById('p-opa');
+  const pRun = document.getElementById('p-runtime');
+
+  let everHadEvent = false;
+  let lastEventTs = 0;
+
+  function fmtTime(ts){ try { return new Date(ts).toLocaleTimeString(); } catch { return '—'; } }
+  function confPct(x){ return x==null ? '—' : Math.round(x*100)+'%'; }
+  function secondsAgo(ts){ return (Date.now()-ts)/1000; }
+  function setNode(el, subEl, state, text){
+    el.className = 'node ' + state; if(subEl && text!=null) subEl.textContent = text;
+  }
+  function setPill(pillEl, text, good){
+    pillEl.style.display = 'inline-block';
+    pillEl.textContent = text;
+    pillEl.className = 'statuspill ' + (good ? 'status-ok' : 'status-bad');
+  }
+  function hidePill(p){ p.style.display='none'; }
+
+  async function fetchEvents(){
+    try{
+      const res = await fetch(`${API}/events?device_id=${encodeURIComponent(DEVICE_ID)}&limit=50`, {cache:'no-store'});
+      if(!res.ok) throw new Error('bad response');
+      const items = await res.json(); // newest-first
+      netDot.className='dot ok'; netLbl.textContent='CONNECTED';
+      render(items, true);
+    }catch(e){
+      netDot.className='dot bad'; netLbl.textContent='OFFLINE';
+      render([], false);
+      console.error(e);
+    }
+  }
+
+  function render(items, connected){
+    // counters
+    eventCountEl.textContent = `${items.length} event${items.length===1?'':'s'}`;
+    if(items[0]?.ts){ lastTsEl.textContent = 'last: '+fmtTime(items[0].ts); }
+
+    // banner
+    if(items.length){
+      const ev = items[0];
+      const recent = ev.ts && secondsAgo(ev.ts) < 5;
+      everHadEvent = true;
+      lastEventTs = ev.ts || lastEventTs;
+
+      banner.className = 'banner' + (recent?' hot':'');
+      bannerTitle.textContent = 'Human detection';
+      bannerTime.textContent = fmtTime(ev.ts);
+      bannerBadge.textContent = recent ? 'HUMAN' : 'IDLE';
+      bannerBadge.className = 'badge' + (recent?' red':'');
+      bannerKVs.style.display='flex';
+      kvCount.textContent  = ev.person_count ?? 0;
+      kvConf.textContent   = confPct(ev.top_confidence);
+      kvModel.textContent  = ev.model || '—';
+      kvImage.textContent  = ev.image_tag || '—';
+    }else{
+      banner.className='banner';
+      bannerTitle.textContent='Waiting for events…';
+      bannerTime.textContent='—';
+      bannerBadge.textContent='IDLE';
+      bannerBadge.className='badge';
+      bannerKVs.style.display='none';
+    }
+
+    // metrics windows
+    const now = Date.now();
+    const inWin = s => items.filter(ev => ev.ts && (now-ev.ts)<=s*1000).length;
+    m10s.textContent = inWin(10);
+    m1m.textContent  = inWin(60);
+    m5m.textContent  = inWin(300);
+
+    // timeline
+    tbody.innerHTML='';
+    for(const ev of items){
+      const tr=document.createElement('tr');
+      tr.innerHTML = `
+        <td>${fmtTime(ev.ts)}</td>
+        <td>${ev.event || '—'}</td>
+        <td>${ev.person_count ?? 0}</td>`;
+      tbody.appendChild(tr);
+    }
+
+    // --- Architecture flow logic ---
+    const last = items[0];
+    const recent = last && last.ts && secondsAgo(last.ts) < 5;
+    const failedRuntime = everHadEvent && (Date.now() - lastEventTs) > 120000; // 2 min without events
+
+    // Cloud API
+    setNode(nCloud, sCloud, connected ? 'ok' : 'offline', connected ? 'reachable' : 'offline');
+
+    // UI
+    setNode(nUI, sUI, connected ? 'ok' : 'idle', connected ? 'ready' : 'waiting');
+
+    // Harbor (no tag text per your request)
+    setNode(nHarbor, sHarbor, items.length ? 'ok' : (connected ? 'ok' : 'unknown'), '');
+
+    // OPA: if we ever saw an event, OPA must have passed
+    if(everHadEvent){
+      setNode(nOPA, sOPA, 'ok', 'PASSED');
+      setPill(pOPA, 'policy: passed', true);
+    }else{
+      setNode(nOPA, sOPA, connected ? 'idle' : 'unknown', connected ? 'waiting' : 'unknown');
+      hidePill(pOPA);
+    }
+
+    // Edge: no "idle" wording; show camera · arm64; state active when recent else ok
+    setNode(nEdge, sEdge, recent ? 'active' : (items.length ? 'ok' : (connected ? 'ok' : 'unknown')),
+            'camera · arm64');
+
+    // Runtime: ACTIVE when recent; INACTIVE when not recent; FAILED if previously active and now silent for 2+ min
+    hidePill(pRun);
+    if(failedRuntime){
+      setNode(nRun, sRun, 'offline', 'FAILED');
+      setPill(pRun, 'failed', false);
+    }else if(recent){
+      setNode(nRun, sRun, 'active', 'running');
+      setPill(pRun, 'passed', true);
+    }else if(everHadEvent){
+      setNode(nRun, sRun, 'idle', 'inactive');
+      setPill(pRun, 'passed', true);
+    }else{
+      setNode(nRun, sRun, connected ? 'idle' : 'unknown', connected ? 'inactive' : 'unknown');
+    }
+  }
+
+  setInterval(fetchEvents, 1000);
+  fetchEvents();
+</script>
