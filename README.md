@@ -34,22 +34,7 @@ Container startup on the edge is gated by **OPA** policies (allowed registry, CP
 **2) Repository layout**
    
 cncf-on-arm-edge-detection/
-├─ cloud/                       # Cloud FastAPI + dashboard (run on EC2 or any host)
-│  ├─ api.py
-│  ├─ index.html
-│  └─ static/
-│     └─ arm.png
-├─ edge/                        # Edge runtime (run on your arm64 laptop/box)
-│  ├─ Dockerfile
-│  ├─ requirements.txt
-│  ├─ real_time_object_detection.py
-│  ├─ mediamtx.yml              # MediaMTX RTSP server config
-│  ├─ edge-run.sh               # OPA-gated container runner
-│  ├─ variables.example.sh      # copy to variables.sh and edit
-│  └─ policies/
-│     ├─ policy.rego
-│     └─ data.json
-└─ README.md
+
 
 ---
 
