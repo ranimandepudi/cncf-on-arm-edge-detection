@@ -86,13 +86,14 @@ cd cncf-on-arm-edge-detection/cloud
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
-pip install fastapi uvicorn
+pip install fastapi uvicorn redis
 
 # 3) run (foreground)
 uvicorn api:app --host 0.0.0.0 --port 8080
 
 # (Optional, run in background)
 # nohup uvicorn api:app --host 0.0.0.0 --port 8080 > server.log 2>&1 & disown
+```
 
 Open the dashboard in your browser:
 http://<CLOUD_PUBLIC_IP>:8080/
