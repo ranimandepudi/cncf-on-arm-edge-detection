@@ -270,7 +270,7 @@
 
   async function fetchEvents(){
     try{
-      const res = await fetch(`${API}/events?device_id=${encodeURIComponent(DEVICE_ID)}&limit=50`, {cache:'no-store'});
+      const res = await fetch(`${API}/eventsRead?device_id=${encodeURIComponent(DEVICE_ID)}&limit=50`, {cache:'no-store'});
       if(!res.ok) throw new Error('bad response');
       const items = await res.json(); // newest-first
       netDot.className='dot ok'; netLbl.textContent='CONNECTED';

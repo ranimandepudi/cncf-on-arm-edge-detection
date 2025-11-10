@@ -4,11 +4,11 @@ from fastapi.responses import FileResponse, JSONResponse
 from collections import deque, defaultdict
 from fastapi.staticfiles import StaticFiles
 
-import json, os
+import json, os, redis
+from redis.commands.json.path import Path
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
-STORE = defaultdict(lambda: deque(maxlen=500))  # device_id -> deque of events (newest last)
 
 # Serve your frontend
 @app.get("/")
@@ -21,12 +21,18 @@ def index():
 async def post_events(req: Request):
     body = await req.json()
     device = body.get("device_id", "unknown")
-    STORE[device].append(body)              # append newest at the end
+    r = redis.Redis(host='redis', port=6379, decode_responses=True, password=os.getenv("REDIS_PASSWORD", ""))
+    events = r.json().get(device, ".events")
+    if len(events) == 0:
+        r.json().set(device, Path.root_path(), {"events": []})
+    r.json().arrinsert(device, Path('.events'), 0, body)
     return JSONResponse({"ok": True})
 
 # Frontend -> Cloud: fetch recent events (newest-first)
-@app.get("/events")
+@app.get("/eventsRead")
 def get_events(device_id: str, limit: int = 50):
-    items = list(STORE[device_id])[-limit:] # newest at end
-    items.reverse()                         # return newest-first
-    return JSONResponse(items)
+    events = r.json().get(device, ".events")
+    return JSONResponse(events)
+
+print(f"Git Sha: {os.getenv('GIT_COMMIT', 'main')}")
+print(f"Version: {os.getenv('VERSION', 'main')}")

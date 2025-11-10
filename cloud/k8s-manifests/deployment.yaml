@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: object-detection
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: object-detection
+  template:
+    metadata:
+      labels:
+        app: object-detection
+    spec:
+      containers:
+        - name: main
+          # change me to something better, once the images are somewhere
+          image: docker.io/jkremser/object-detection:main
+          ports:
+            - containerPort: 8080
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis
+                  key: password
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: object-detection
+spec:
+  ports:
+    - port: 8080
+      name: http
+  selector:
+    app: object-detection
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: object-detection
+spec:
+  rules:
+    - host: cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: object-detection
+                port:
+                  number: 8080
